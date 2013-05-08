@@ -616,6 +616,12 @@ Semaphore_release(Semaphore *self) {
 }
 
 
+PyObject *
+Semaphore_exit(Semaphore *self, PyObject *args) {
+    return Semaphore_release(self);
+}
+
+
 static PyObject *
 Semaphore_acquire(Semaphore *self, PyObject *args, PyObject *keywords) {
     NoneableTimeout timeout;
@@ -723,6 +729,15 @@ Semaphore_acquire(Semaphore *self, PyObject *args, PyObject *keywords) {
 
     error_return:
     return NULL;
+}
+
+
+PyObject *
+Semaphore_enter(Semaphore *self) {
+    PyObject *args = PyTuple_New(0);
+    PyObject *retval = Semaphore_acquire(self, args, NULL);
+    Py_DECREF(args);
+    return retval;
 }
 
 
@@ -2071,11 +2086,19 @@ static PyMethodDef Semaphore_methods[] = {
         METH_VARARGS, 
         "Acquire (grab) the semaphore, waiting if necessary"
     },
+    {   "__enter__",
+        (PyCFunction)Semaphore_enter,
+        METH_NOARGS,
+    },
     {   "release", 
         (PyCFunction)Semaphore_release, 
         METH_NOARGS, 
         "Release the semaphore"
     }, 
+    {   "__exit__",
+        (PyCFunction)Semaphore_exit,
+        METH_VARARGS,
+    },
     {   "close", 
         (PyCFunction)Semaphore_close, 
         METH_NOARGS, 
