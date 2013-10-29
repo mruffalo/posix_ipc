@@ -70,6 +70,21 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
 
+/* SEM_FAILED is defined as an int in Apple's headers, and this makes the 
+compiler complain when I compare it to a pointer. Python faced the same
+problem (issue 9586) and I copied their solution here.
+ref: http://bugs.python.org/issue9586
+
+Note that in /Developer/SDKs/MacOSX10.4u.sdk/usr/include/sys/semaphore.h,
+SEM_FAILED is #defined as -1 and that's apparently the definition used by
+Python when building. In /usr/include/sys/semaphore.h, it's defined
+as ((sem_t *)-1).
+*/ 
+#ifdef __APPLE__
+    #undef  SEM_FAILED
+    #define SEM_FAILED ((sem_t *)-1)
+#endif
+
 /* POSIX says that a mode_t "shall be an integer type". To avoid the need 
 for a specific get_mode function for each type, I'll just stuff the mode into 
 a long and mention it in the Xxx_members list for each type.
@@ -616,12 +631,6 @@ Semaphore_release(Semaphore *self) {
 }
 
 
-PyObject *
-Semaphore_exit(Semaphore *self, PyObject *args) {
-    return Semaphore_release(self);
-}
-
-
 static PyObject *
 Semaphore_acquire(Semaphore *self, PyObject *args, PyObject *keywords) {
     NoneableTimeout timeout;
@@ -732,15 +741,6 @@ Semaphore_acquire(Semaphore *self, PyObject *args, PyObject *keywords) {
 }
 
 
-PyObject *
-Semaphore_enter(Semaphore *self) {
-    PyObject *args = PyTuple_New(0);
-    PyObject *retval = Semaphore_acquire(self, args, NULL);
-    Py_DECREF(args);
-    return retval;
-}
-
-
 // sem_getvalue isn't available on all systems.
 #ifdef SEM_GETVALUE_EXISTS
 static PyObject *
@@ -812,6 +812,32 @@ Semaphore_close(Semaphore *self) {
     return NULL;
 }
 
+
+static PyObject *
+Semaphore_enter(Semaphore *self) {
+    PyObject *args = PyTuple_New(0);
+    PyObject *retval = NULL;
+
+    if (Semaphore_acquire(self, args, NULL)) {
+        retval = (PyObject *)self;
+        Py_INCREF(self);
+    }
+    /* else acquisition failed for some reason so just fall through to 
+       the return statement below and return NULL. Semaphore_acquire() has
+       already called PyErr_SetString() to set the relevant error.
+	*/
+
+    Py_DECREF(args);
+    
+    return retval;
+}
+
+
+static PyObject *
+Semaphore_exit(Semaphore *self, PyObject *args) {
+    DPRINTF("exiting context and releasing semaphore %s\n", self->name);
+    return Semaphore_release(self);
+}
 
 /*   =====  End Semaphore functions  =====                  */
 
@@ -2081,24 +2107,24 @@ static PyMemberDef Semaphore_members[] = {
 
 
 static PyMethodDef Semaphore_methods[] = { 
+    {   "__enter__",
+        (PyCFunction)Semaphore_enter,
+        METH_NOARGS,
+    },
+    {   "__exit__",
+        (PyCFunction)Semaphore_exit,
+        METH_VARARGS,
+    },
     {   "acquire", 
         (PyCFunction)Semaphore_acquire, 
         METH_VARARGS, 
         "Acquire (grab) the semaphore, waiting if necessary"
-    },
-    {   "__enter__",
-        (PyCFunction)Semaphore_enter,
-        METH_NOARGS,
     },
     {   "release", 
         (PyCFunction)Semaphore_release, 
         METH_NOARGS, 
         "Release the semaphore"
     }, 
-    {   "__exit__",
-        (PyCFunction)Semaphore_exit,
-        METH_VARARGS,
-    },
     {   "close", 
         (PyCFunction)Semaphore_close, 
         METH_NOARGS, 
