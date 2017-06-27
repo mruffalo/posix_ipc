@@ -2,6 +2,7 @@
 # Don't add any from __future__ imports here. This code should execute
 # against standard Python.
 import unittest
+from unittest import skipUnless
 import datetime
 import random
 import time
@@ -49,7 +50,7 @@ def threaded_notification_handler_rearm(test_case_instance):
     test_case_instance.notification_event.set()
 
 
-if posix_ipc.MESSAGE_QUEUES_SUPPORTED:
+    @skipUnless(posix_ipc.MESSAGE_QUEUES_SUPPORTED, "Requires MessageQueue support")
     class TestMessageQueues(tests_base.Base):
         """Exercise the MessageQueue class"""
         def setUp(self):
@@ -119,6 +120,39 @@ if posix_ipc.MESSAGE_QUEUES_SUPPORTED:
             self.assertGreaterEqual(len(mq.name), 2)
             mq.close()
             mq.unlink()
+
+        def test_name_as_bytes(self):
+            """Test that the name can be bytes.
+
+            In Python 2, bytes == str. This test is really only interesting in Python 3.
+            """
+            if tests_base.IS_PY3:
+                name = bytes(tests_base.make_name(), 'ASCII')
+            else:
+                name = bytes(tests_base.make_name())
+            mq = posix_ipc.MessageQueue(name, posix_ipc.O_CREX)
+            # No matter what the name is passed as, posix_ipc.name returns the default string type,
+            # i.e. str in Python 2 and unicode in Python 3.
+            if tests_base.IS_PY3:
+                self.assertEqual(name, bytes(mq.name, 'ASCII'))
+            else:
+                self.assertEqual(name, mq.name)
+            mq.unlink()
+            mq.close()
+
+        def test_name_as_unicode(self):
+            """Test that the name can be unicode.
+
+            In Python 3, str == unicode. This test is really only interesting in Python 2.
+            """
+            if tests_base.IS_PY3:
+                name = tests_base.make_name()
+            else:
+                name = unicode(tests_base.make_name(), 'ASCII')
+            mq = posix_ipc.MessageQueue(name, posix_ipc.O_CREX)
+            self.assertEqual(name, mq.name)
+            mq.unlink()
+            mq.close()
 
         # don't bother testing mode, it's ignored by the OS?
 
@@ -462,7 +496,6 @@ if posix_ipc.MESSAGE_QUEUES_SUPPORTED:
             # The mqd is of type mqd_t. I can't find doc that states what this
             # type is. All I know is that -1 is an error so it's probably
             # int-ish, but I can't tell exactly what to expect.
-
             self.assertWriteToReadOnlyPropertyFails('mqd', 42)
 
         def test_property_max_messages(self):
@@ -544,7 +577,6 @@ if posix_ipc.MESSAGE_QUEUES_SUPPORTED:
 
             mq.close()
             mq.unlink()
-
 
     if __name__ == '__main__':
         unittest.main()

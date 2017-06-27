@@ -79,15 +79,12 @@ class TestMemory(tests_base.Base):
         self.assertRaises(posix_ipc.ExistentialError, posix_ipc.SharedMemory,
                           '/foo', posix_ipc.O_CREX)
 
-    if "Darwin" in platform.uname():
-        # O_TRUNC is not supported under OS X
-        pass
-    else:
-        def test_o_trunc(self):
-            """Test that O_TRUNC truncates the memory to 0 bytes"""
-            mem_copy = posix_ipc.SharedMemory(self.mem.name, posix_ipc.O_TRUNC)
+    @unittest.skipIf("Darwin" in platform.uname(), "O_TRUNC is not supported under OS X")
+    def test_o_trunc(self):
+        """Test that O_TRUNC truncates the memory to 0 bytes"""
+        mem_copy = posix_ipc.SharedMemory(self.mem.name, posix_ipc.O_TRUNC)
 
-            self.assertEqual(mem_copy.size, 0)
+        self.assertEqual(mem_copy.size, 0)
 
     def test_randomly_generated_name(self):
         """tests that the randomly-generated name works"""
@@ -95,6 +92,39 @@ class TestMemory(tests_base.Base):
         self.assertIsNotNone(mem.name)
         self.assertEqual(mem.name[0], '/')
         self.assertGreaterEqual(len(mem.name), 2)
+        mem.close_fd()
+        mem.unlink()
+
+    def test_name_as_bytes(self):
+        """Test that the name can be bytes.
+
+        In Python 2, bytes == str. This test is really only interesting in Python 3.
+        """
+        if tests_base.IS_PY3:
+            name = bytes(tests_base.make_name(), 'ASCII')
+        else:
+            name = bytes(tests_base.make_name())
+        mem = posix_ipc.SharedMemory(name, posix_ipc.O_CREX, size=4096)
+        # No matter what the name is passed as, posix_ipc.name returns the default string type,
+        # i.e. str in Python 2 and unicode in Python 3.
+        if tests_base.IS_PY3:
+            self.assertEqual(name, bytes(mem.name, 'ASCII'))
+        else:
+            self.assertEqual(name, mem.name)
+        mem.close_fd()
+        mem.unlink()
+
+    def test_name_as_unicode(self):
+        """Test that the name can be unicode.
+
+        In Python 3, str == unicode. This test is really only interesting in Python 2.
+        """
+        if tests_base.IS_PY3:
+            name = tests_base.make_name()
+        else:
+            name = unicode(tests_base.make_name(), 'ASCII')
+        mem = posix_ipc.SharedMemory(name, posix_ipc.O_CREX, size=4096)
+        self.assertEqual(name, mem.name)
         mem.close_fd()
         mem.unlink()
 

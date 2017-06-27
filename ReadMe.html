@@ -4,7 +4,7 @@
 
 <head>
 	<meta name="author" content="Philip Semanchuk">
-	<meta name="copyright" content="All contents &copy; 2014 Philip Semanchuk">
+	<meta name="copyright" content="All contents &copy; 2015 Philip Semanchuk">
 	<meta name="keywords" content="python posix ipc semaphore shared memory message queue">
 
     <title>POSIX IPC for Python</title>
@@ -29,14 +29,6 @@
         }
 
         pre { margin-left: 2em; }
-
-        #download_box {
-        	float: right;
-        	width: 12em;
-        	background-color: #d0d0a9;
-        	border: 1px solid #666;
-        	padding: .33em;
-        }
 
         /* This style is only present on the local version of the readme.
            In the online version, the RSS feed is displayed. */
@@ -66,16 +58,16 @@ OpenSolaris ≥ 2008.05.
 the platform notes below</a> for more details.
 </p>
 
-<p>This module works under Python 2.4 &ndash; 3.4. It is released
+<p>This module works under Python 2.7 and 3.x. It is released
 under a BSD license.
 </p>
 
 
 <p>You can <strong>download
-<a href="posix_ipc-0.9.9.tar.gz">posix_ipc version 0.9.9</a>
+<a href="posix_ipc-1.0.0.tar.gz">posix_ipc version 1.0.0</a>
 </strong>
-<a href="posix_ipc-0.9.9.md5.txt">[MD5 sum]</a>
-<a href="posix_ipc-0.9.9.sha1.txt">[SHA1 sum]</a>
+<a href="posix_ipc-1.0.0.md5.txt">[MD5 sum]</a>
+<a href="posix_ipc-1.0.0.sha1.txt">[SHA1 sum]</a>
 
 which contains the source code, setup.py, installation instructions, tests, and
 <a href="#samples">sample code</a>. The exact same
@@ -435,7 +427,7 @@ a file descriptor that can be mmapped.
     <dd>
         Closes the file descriptor associated with this SharedMemory
         object. Calling <tt>close_fd()</tt> is the same as calling
-        <tt><a href="http://www.python.org/doc/2.6/library/os.html#os.close">os.close()</a></tt>
+        <tt><a href="https://docs.python.org/2/library/os.html#os.close">os.close()</a></tt>
         on a SharedMemory object's <tt>fd</tt> attribute.
 
         <p>You must call <tt>close_fd()</tt> or <tt>os.close()</tt>
@@ -685,11 +677,12 @@ from the same directory as <tt>setup.py</tt>:<br>
 
 <h4 id="samples">Sample Code</h4>
 
-<p>This module comes with three demonstrations. The first (in the
+<p>This module comes with four demonstrations. The first (in the
 directory <tt>demo</tt>) shows how to use shared memory and semaphores.
 The second (in the directory <tt>demo2</tt>) shows how to use
 message queues. The third (<tt>demo3</tt>) shows how to use message queue
-notifications.
+notifications. The fourth (<tt>demo4</tt>) shows how to use a semaphore in
+a context manager.
 </p>
 
 <h4>Nobody Likes a Mr. Messy</h4>
@@ -783,25 +776,23 @@ probably cover them.
 
 <p>For Pythonistas &ndash;</p>
 <ul>
-    <li><a href="http://www.youtube.com/watch?v=13JK5kChbRw">A meditation on the
+    <li><a href="https://www.youtube.com/watch?v=VKHFZBUTA4k">A meditation on the
     	inaccuracy of shared memories</a>
     </li>
 </ul>
 
-
 <h3><a name="KnownBugs">Known Bugs</a></h3>
 
-<p>I don't know of any bugs in this code. However, under Python 3 the
-standard library modules accept bytes and bytearray objects for filenames in
-addition to strings. One could argue that this module should behave the
-same way.
-</p>
+<p>I don't know of any bugs in this code.</p>
 
-<p>Also, this module doesn't support Python 3 memory views, which it
-probably should (for shared memory objects). Support for that might come in
-a later version.
-</p>
+<h3>Support for Older Pythons</h3>
 
+<p>
+If you need to support Python &lt; 2.7, try
+<a href="posix_ipc-0.9.9.tar.gz">posix_ipc version 0.9.9</a>
+<a href="posix_ipc-0.9.9.md5.txt">[MD5 sum]</a>
+<a href="posix_ipc-0.9.9.sha1.txt">[SHA1 sum]</a>.
+</p>
 
 <h2 id="platforms">Platform Notes</h2>
 
@@ -849,7 +840,7 @@ conformance</em>" and still not support any or all of the IPC functions.
         </p>
     </dd>
 
-    <dt>OS X (up to and including 10.9)</dt>
+    <dt>OS X (up to and including 10.10)</dt>
     <dd>
         Message queues are not supported by OS X. Also,
         <tt>sem_getvalue()</tt> and <tt>sem_timedwait()</tt> are not
